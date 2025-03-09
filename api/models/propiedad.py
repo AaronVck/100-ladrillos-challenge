@@ -10,4 +10,5 @@ class Property(BaseModel):
     ladrillos_maximos: int
     ladrillos_actuales: int
     ladrillos_restantes: int
+    alta_baja: Optional[int] = 1
 

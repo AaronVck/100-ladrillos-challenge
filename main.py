@@ -1,6 +1,8 @@
 from fastapi import FastAPI,APIRouter
 from api.db.connection import Database
-from api.controllers.Compra import router as compra_router
+from api.controllers.CompraVenta import router as compra_venta_router
+from api.controllers.Usuarios import router as usuarios_router
+from api.controllers.Propiedades import router as propiedades_router
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import os
@@ -34,10 +36,13 @@ app = FastAPI(
 @router.get("/")
 async def main():
     response_data = {
-        "Status": "Funcional"
+        "Status": "Funcional?"
         }
     return JSONResponse(content=response_data, status_code=200)
 
 app.include_router(router)
-
-app.include_router(compra_router, prefix="/compra", tags=["100LadrillosCompra"])
+# Publico
+app.include_router(usuarios_router, prefix="/usuarios", tags=["100LadrillosCreacionUsuarios"])
+# Protegidos
+app.include_router(compra_venta_router, prefix="/compraVenta", tags=["100LadrillosCompraVenta"])
+app.include_router(propiedades_router, prefix="/propiedades", tags=["100LadrillosPropiedades"])
