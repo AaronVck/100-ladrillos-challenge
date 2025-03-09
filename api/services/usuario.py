@@ -20,11 +20,19 @@ class UserService:
             await conn.connection.rollback()
             raise e
 
-    async def get_user(self, data_user: User) -> Optional[dict]:
-        query = "SELECT id, nombre, alta_baja FROM user WHERE id = %s AND alta_baja = 1"
-        async for conn in self.db.get_connection():
-            await conn.execute(query, (data_user.id,))
-            return await conn.fetchone()
+    async def get_user(self, nombre: Optional[str] | None = None, contrasena: Optional[str] | None = None, id: Optional[int] | None = None) -> Optional[dict]:
+        if nombre:
+            query = "SELECT id, contrasena, nombre FROM user WHERE nombre = %s AND alta_baja = 1"
+            values = [nombre]
+        elif id:
+            query = "SELECT id, nombre, alta_baja FROM user WHERE id = %s AND alta_baja = 1"
+            values = [id]
+        try:
+            async for conn in self.db.get_connection():
+                await conn.execute(query, tuple(values))
+                return await conn.fetchone()
+        except Exception as err:
+            return {"Error": err}
 
     async def get_users(self) -> list:
         query = "SELECT id, nombre, alta_baja FROM user WHERE alta_baja = 1"
@@ -34,17 +42,21 @@ class UserService:
 
     async def update_user(self, nombre: str, contrasena: str, id: int) -> bool:
 
-        if contrasena:
+        if contrasena != '':
             hashed_password = get_password_hash(contrasena)
             if verify_password(contrasena, hashed_password):
 
-                query = "UPDATE user SET nombre = %s, contrasena = %s WHERE id = %s"
-                params = (nombre, hashed_password, id)
+                query = "UPDATE user SET contrasena = %s WHERE id = %s"
+                params = (hashed_password, id)
             else:
                 raise ["Contrasena Incorrecta"]
-        else:
+        elif nombre != '':
             query = "UPDATE user SET nombre = %s WHERE id = %s"
             params = (nombre, id)
+        elif contrasena != '' and nombre != '':
+            hashed_password = get_password_hash(contrasena)
+            query = "UPDATE user SET nombre = %s, contrasena = %s WHERE id = %s"
+            params = (hashed_password, id)
         try:
             async for conn in self.db.get_connection():
                 await conn.execute(query, params)

@@ -41,7 +41,16 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
 async def get_current_user(token: str = Depends(oauth2_scheme)):
 
     try:
+        # Decodificar el token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
+
+        username: str = payload.get("sub")
+        user_id: int = payload.get("id")
+
+        if username is None or user_id is None:
+            raise HTTPException(status_code=401, detail="Token inválido")
+
+        return {"nombre": username, "id": user_id}
+
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")

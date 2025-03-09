@@ -5,7 +5,7 @@ from starlette import status
 from api.services.usuario import UserService
 from api.models.usuario import User
 from api.db.connection import database
-from api.utils.seguridad import get_password_hash
+from api.utils.seguridad import get_password_hash, verify_password, create_access_token
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ def get_user_service() -> UserService:
 async def create_user(user: User, db: UserService = Depends(get_user_service)):
     """Registra un nuevo usuario en la base de datos."""
     # Verificar si el usuario ya existe
-    existing_user = await db.get_user(user)
+    existing_user = await db.get_user(user.nombre)
 
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Usuario ya registrado")
@@ -27,6 +27,17 @@ async def create_user(user: User, db: UserService = Depends(get_user_service)):
 
     return JSONResponse(status_code=200, content={"message": "Usuario registrado exitosamente"})
 
+@router.post("/iniciarSesion")
+async def login(nombre: str = Form(), contrasena: str = Form(), db: UserService = Depends(get_user_service)):
+    """Verifica las credenciales y genera un token JWT si son correctas."""
+    user_bd = await db.get_user(nombre, contrasena)
+    if not user_bd or not verify_password(contrasena, user_bd["contrasena"]):
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    # Generar el token con la información del usuario
+    access_token = create_access_token(data={"sub": user_bd["nombre"], "id": user_bd["id"]})
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/usuarios")
 async def get_users(db: UserService = Depends(get_user_service)):
