@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Form
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 from api.services.usuario import UserService
 from api.models.usuario import User
@@ -28,10 +29,10 @@ async def create_user(user: User, db: UserService = Depends(get_user_service)):
     return JSONResponse(status_code=200, content={"message": "Usuario registrado exitosamente"})
 
 @router.post("/iniciarSesion")
-async def login(nombre: str = Form(), contrasena: str = Form(), db: UserService = Depends(get_user_service)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: UserService = Depends(get_user_service)):
     """Verifica las credenciales y genera un token JWT si son correctas."""
-    user_bd = await db.get_user(nombre, contrasena)
-    if not user_bd or not verify_password(contrasena, user_bd["contrasena"]):
+    user_bd = await db.get_user(form_data.username, form_data.password)
+    if not user_bd or not verify_password(form_data.password, user_bd["contrasena"]):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
     # Generar el token con la información del usuario
@@ -70,3 +71,5 @@ async def delete_user(user_id: int, db: UserService = Depends(get_user_service))
         return JSONResponse(content={"deleted": deleted}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error eliminando el usuario: {str(e)}")
+
+

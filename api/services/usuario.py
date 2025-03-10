@@ -2,6 +2,9 @@ from api.db.connection import Database
 from typing import Optional
 from api.utils.seguridad import get_password_hash, verify_password
 from api.models.usuario import User
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserService:
