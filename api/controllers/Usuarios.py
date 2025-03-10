@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 from api.services.usuario import UserService
 from api.models.usuario import User
+from api.utils.seguridad import get_current_user
 from api.db.connection import database
 from api.utils.seguridad import get_password_hash, verify_password, create_access_token
 
@@ -36,7 +37,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: UserServic
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
     # Generar el token con la información del usuario
-    access_token = create_access_token(data={"sub": user_bd["nombre"], "id": user_bd["id"]})
+    access_token = create_access_token(data={"sub": user_bd["nombre"], "id": user_bd["id"], "alta_baja": user_bd['alta_baja']})
 
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -56,20 +57,25 @@ async def get_users(db: UserService = Depends(get_user_service)):
 async def update_user(nombre: Optional[str] = Form(""),
                       contrasena: Optional[str] = Form(""),
                       user_id: int | None = None,
-                      db: UserService = Depends(get_user_service)):
-    try:
-        updated = await db.update_user(nombre, contrasena, user_id)
-        return JSONResponse(content={"updated": updated}, status_code=200)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error actualizando el usuario: {str(e)}")
-
+                      db: UserService = Depends(get_user_service),
+                      current_user: dict = Depends(get_current_user)):
+    if current_user and current_user['id'] == user_id:
+        try:
+            updated = await db.update_user(nombre, contrasena, user_id)
+            return JSONResponse(content={"updated": updated}, status_code=200)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error actualizando el usuario: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"No puedes actualizar datos de otros usuarios que no seas tu")
 
 @router.delete("/{user_id}", response_model=bool)
-async def delete_user(user_id: int, db: UserService = Depends(get_user_service)):
-    try:
-        deleted = await db.delete_user(user_id)
-        return JSONResponse(content={"deleted": deleted}, status_code=200)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error eliminando el usuario: {str(e)}")
+async def delete_user(user_id: int, db: UserService = Depends(get_user_service),
+                      current_user: dict = Depends(get_current_user)):
+    if current_user and current_user['id'] == user_id:
+        try:
+            deleted = await db.delete_user(user_id)
+            return JSONResponse(content={"deleted": deleted}, status_code=200)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error eliminando el usuario: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"No puedes eliminar otros usuarios que no seas tu")
 
 

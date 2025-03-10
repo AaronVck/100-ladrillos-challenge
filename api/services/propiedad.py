@@ -63,7 +63,8 @@ class PropertyService:
             condition.append("valor_del_ladrillo = %s")
             values.append(valor_ladrillos)
         if ladrillos_maximos != 0 and ladrillos_maximos is not None:
-            condition.append("ladrillos_maximos = %s")
+            condition.append("ladrillos_maximos = %s, ladrillos_restantes = %s")
+            values.append(ladrillos_maximos)
             values.append(ladrillos_maximos)
         if nombre_propiedad != '' and nombre_propiedad is not None:
             condition.append("nombre_propiedad = %s")

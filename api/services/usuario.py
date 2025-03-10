@@ -25,7 +25,7 @@ class UserService:
 
     async def get_user(self, nombre: Optional[str] | None = None, contrasena: Optional[str] | None = None, id: Optional[int] | None = None) -> Optional[dict]:
         if nombre:
-            query = "SELECT id, contrasena, nombre FROM user WHERE nombre = %s AND alta_baja = 1"
+            query = "SELECT id, contrasena, nombre, alta_baja FROM user WHERE nombre = %s AND alta_baja = 1"
             values = [nombre]
         elif id:
             query = "SELECT id, nombre, alta_baja FROM user WHERE id = %s AND alta_baja = 1"

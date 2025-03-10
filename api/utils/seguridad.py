@@ -11,7 +11,7 @@ load_dotenv()
 # Clave secreta para firmar los tokens (debería estar en variables de entorno)
 SECRET_KEY = os.getenv('TOKEN_KEY')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 # Contexto para encriptar y verificar contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

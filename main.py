@@ -1,5 +1,6 @@
 from fastapi import FastAPI,APIRouter
 from api.db.connection import Database
+from fastapi.middleware.cors import CORSMiddleware
 from api.controllers.CompraVenta import router as compra_venta_router
 from api.controllers.Usuarios import router as usuarios_router
 from api.controllers.Propiedades import router as propiedades_router
@@ -18,6 +19,8 @@ DATABASE_CONFIG = {
     "db": os.getenv('DB_NAME')
 }
 
+
+
 database = Database(**DATABASE_CONFIG)
 router = APIRouter()
 
@@ -32,6 +35,25 @@ app = FastAPI(
     lifespan=lifespan,
     swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"}
 )
+
+# ✅ Middleware para evitar caché en respuestas
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Cache-Control"],
+)
+
+@app.middleware("http")
+async def add_cache_control_header(request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 
 @router.get("/")
 async def main():

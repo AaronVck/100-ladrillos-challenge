@@ -32,12 +32,13 @@ async def get_all_properties(current_user: dict = Depends(get_current_user),
                              db: PropertyService = Depends(get_property_service)):
     results = await db.get_all_properties()
     if results:
+        print(results)
         try:
             return JSONResponse(content=results, status_code=200)
         except Exception as err:
-            raise {"Error": f"Sucedió un error al obtener las propiedades - {err}"}
+            raise HTTPException(status_code=500, detail={"Error": f"Sucedió un error al obtener las propiedades - {err}"})
     else:
-        raise {"Error": "Sucedió un error al obtener las propiedades"}
+        raise HTTPException(status_code=500, detail={"Status": "No hay propiedades disponibles"})
 
 @router.get("/verPropiedad/{id_property}")
 async def get_property(id_property: int, current_user: dict = Depends(get_current_user),
@@ -61,7 +62,7 @@ async def update_property_owner(id_property: int, valor_ladrillos: Optional[floa
             if result['dueno_id'] == current_user['id']:
                 if result['ladrillos_maximos'] == result['ladrillos_restantes'] and (ladrillos_maximos != 0 or valor_ladrillos != 0.0):
                     if ladrillos_maximos != 0 or valor_ladrillos != 0.0:
-                        result = await db.update_property(valor_ladrillos, ladrillos_maximos, nombre_propiedad, current_user['id'])
+                        result = await db.update_property(valor_ladrillos, ladrillos_maximos, nombre_propiedad, id_property)
                         if result:
                             return JSONResponse(content="La actualizacion se hizo con exito", status_code=200)
 
@@ -69,8 +70,7 @@ async def update_property_owner(id_property: int, valor_ladrillos: Optional[floa
                         raise HTTPException(status_code=500,
                                             detail=f"Para modificar la propiedad no debe tener ladrillos vendidos")
                 elif nombre_propiedad != 'string':
-                    result = await db.update_property(valor_ladrillos, ladrillos_maximos, nombre_propiedad,
-                                                      current_user['id'])
+                    result = await db.update_property(valor_ladrillos, ladrillos_maximos, nombre_propiedad, id_property)
                     if result:
                         return JSONResponse(content="La actualizacion se hizo con exito", status_code=200)
                 else:
@@ -89,6 +89,8 @@ async def update_property_owner(id_property: int, current_user: dict = Depends(g
     try:
         result = await db.get_property(id_property)
         if result:
+            if result['ladrillos_maximos'] != result['ladrillos_restantes']:
+                raise HTTPException(status_code=500, detail=f"No es posible eliminar un propiedad si hay ladrillos vendidos")
             if result['dueno_id'] == current_user['id']:
                 try:
                     deleted = await db.delete_property(id_property)
